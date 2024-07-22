@@ -81,6 +81,9 @@ export class UserManager {
         socket.on("next", () => {
             this.nextUser(socket.id);
         });
+        socket.on("send-message", ({ roomId, content }: { roomId: string, content: string }) => {
+            this.roomManager.sendMessage(roomId, socket.id, content);
+        });
         socket.on("gemini-request", ({ question, roomId }: { question: string, roomId: string }) => {
             console.log(`Received Gemini request from socket ${socket.id} in room ${roomId}`);
             console.log(`Question: "${question}"`);

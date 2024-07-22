@@ -6,6 +6,7 @@ let GLOBAL_ROOM_ID = 1;
 interface Room {
     user1: User;
     user2: User;
+    messages: { sender: string, content: string }[];
 }
 
 export class RoomManager {
@@ -20,7 +21,7 @@ export class RoomManager {
 
     createRoom(user1: User, user2: User) {
         const roomId = this.generate().toString();
-        this.rooms.set(roomId, { user1, user2 });
+        this.rooms.set(roomId, { user1, user2, messages: [] });
         user1.socket.emit("send-offer", { roomId });
         user2.socket.emit("send-offer", { roomId });
     }
@@ -95,7 +96,19 @@ export class RoomManager {
       
         return formatted;
       };
-
+    sendMessage(roomId: string, senderSocketId: string, content: string) {
+        const room = this.rooms.get(roomId);
+        if (!room) return;
+    
+        const sender = room.user1.socket.id === senderSocketId ? room.user1 : room.user2;
+        const receiver = room.user1.socket.id === senderSocketId ? room.user2 : room.user1;
+    
+        const message = { sender: sender.name, content };
+        room.messages.push(message);
+    
+        
+        receiver.socket.emit("new-message", message);
+    }
     generate() {
         return GLOBAL_ROOM_ID++;
     }
