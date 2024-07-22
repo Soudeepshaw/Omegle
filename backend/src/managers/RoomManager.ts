@@ -1,4 +1,5 @@
 import { User } from "./UserManger";
+import { GeminiService } from '../Services/GeminiService';
 
 let GLOBAL_ROOM_ID = 1;
 
@@ -9,9 +10,12 @@ interface Room {
 
 export class RoomManager {
     private rooms: Map<string, Room>;
+    private geminiService: GeminiService;
+    
 
     constructor() {
         this.rooms = new Map<string, Room>();
+        this.geminiService = new GeminiService();
     }
 
     createRoom(user1: User, user2: User) {
@@ -62,6 +66,35 @@ export class RoomManager {
 
         return [room.user1.socket.id, room.user2.socket.id];
     }
+    async handleGeminiRequest(roomId: string, question: string, socketId: string) {
+        console.log(`Received Gemini request for room ${roomId}: "${question}"`);
+        const room = this.rooms.get(roomId);
+        if (!room) {
+            console.log(`Room ${roomId} not found for Gemini request`);
+            return};
+        console.log('Sending question to Gemini service...');
+        const answer = await this.geminiService.askQuestion(socketId,question);
+        const formattedAnswer = this.formatGeminiResponse(answer);
+        console.log('Received formatted answer from Gemini:', formattedAnswer);
+    console.log('Emitting Gemini response to the user who asked', socketId);
+        const askingUser = room.user1.socket.id === socketId ? room.user1 : room.user2;
+        askingUser.socket.emit("gemini-response", { question,  answer:formattedAnswer, forSocketId: socketId });
+    }
+    private formatGeminiResponse = (text: string) => {
+        // Remove asterisks
+        let formatted = text.replace(/\*/g, '');
+        
+        // Convert Markdown-style links to HTML
+        formatted = formatted.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+        
+        // Convert numbered lists
+        formatted = formatted.replace(/(\d+)\.\s/g, '<br><strong>$1.</strong> ');
+        
+        // Add line breaks for readability
+        formatted = formatted.replace(/\n/g, '<br>');
+      
+        return formatted;
+      };
 
     generate() {
         return GLOBAL_ROOM_ID++;

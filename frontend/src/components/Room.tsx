@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Socket, io } from "socket.io-client";
+import parse from 'html-react-parser';
 
 const URL = "http://localhost:3000";
 
@@ -23,12 +24,18 @@ export const Room = ({
     const [remoteMediaStream, setRemoteMediaStream] = useState<MediaStream | null>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
     const localVideoRef = useRef<HTMLVideoElement>(null);
+    const [geminiQuestion, setGeminiQuestion] = useState('');
+    const [geminiResponses, setGeminiResponses] = useState<Array<{ question: string; answer: string }>>([]);
+    const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
+
+
 
     useEffect(() => {
         const socket = io(URL);
 
         socket.on('send-offer', async ({ roomId }) => {
             setLobby(false);
+            setCurrentRoomId(roomId);
             const pc = new RTCPeerConnection();
             setSendingPc(pc);
 
@@ -131,7 +138,19 @@ export const Room = ({
                 return pc;
             });
         });
-
+        socket.on("gemini-response", ({ question, answer,forSocketId }) => {
+            console.log('Received Gemini response:', { question, answer });
+            if (socket.id === forSocketId){
+                setGeminiResponses(prev => {
+                    const newResponses = [...prev, { question, answer }];
+                    console.log('Updated geminiResponses:', newResponses);
+                    return newResponses;
+                });
+            }
+            
+            
+        });
+        
         socket.on("lobby", () => {
             setLobby(true);
         });
@@ -188,32 +207,65 @@ export const Room = ({
             }
         }
     };
-
-    return (
-        <div className="room-container min-h-screen bg-gradient-to-r from-slate-800 via-gray-500 to-zinc-950 flex flex-col justify-center items-center p-4">
-            <div className="user-info mb-4">
-                <h2 className="text-2xl font-bold text-white">Welcome, {name}!</h2>
-            </div>
-            <div className="video-container flex flex-col md:flex-row gap-4 mb-6">
-                <div className="video-wrapper relative">
-                    <video autoPlay muted playsInline width={400} height={400} ref={localVideoRef} className="video-feed rounded-lg shadow-lg" />
-                    <p className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded">You</p>
-                </div>
-                <div className="video-wrapper relative">
-                    <video autoPlay playsInline width={400} height={400} ref={remoteVideoRef} className="video-feed rounded-lg shadow-lg" />
-                    <p className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded">Stranger</p>
-                </div>
-            </div>
-            {lobby ? (
-                <div className="lobby-message text-center">
-                    <p className="text-white text-lg mb-2">Waiting to connect you to someone...</p>
-                    <div className="spinner w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-            ) : (
-                <button onClick={nextUser} className="next-button bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">
-                    Next
-                </button>
-            )}
-        </div>
-    );
-};
+    const handleGeminiSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (geminiQuestion.trim() && socket && currentRoomId) {
+            console.log('Sending Gemini request:', geminiQuestion, 'Room ID:', currentRoomId);
+            socket.emit("gemini-request", { question: geminiQuestion, roomId:currentRoomId, socketId: socket.id });
+            setGeminiQuestion('');
+        }
+        else{
+            console.error('Unable to send Gemini request. Check socket, currentRoomId, or question.');
+            console.log('Current state:', { socket: !!socket, currentRoomId, geminiQuestion });
+        }
+    };
+    
+      return (
+          <div className="room-container min-h-screen bg-gradient-to-r from-slate-800 via-gray-700 to-zinc-900 flex flex-col justify-center items-center p-8">
+              <div className="user-info mb-6">
+                  <h2 className="text-3xl font-bold text-white bg-opacity-70 bg-black px-4 py-2 rounded-lg shadow-md">Welcome, {name}!</h2>
+              </div>
+              <div className="video-container flex flex-col lg:flex-row gap-6 mb-8">
+                  <div className="video-wrapper relative">
+                      <video autoPlay muted playsInline width={480} height={360} ref={localVideoRef} className="video-feed rounded-xl shadow-2xl border-4 border-blue-400" />
+                      <p className="absolute bottom-3 left-3 bg-blue-500 text-white px-3 py-1 rounded-full font-semibold">You</p>
+                  </div>
+                  <div className="video-wrapper relative">
+                      <video autoPlay playsInline width={480} height={360} ref={remoteVideoRef} className="video-feed rounded-xl shadow-2xl border-4 border-green-400" />
+                      <p className="absolute bottom-3 left-3 bg-green-500 text-white px-3 py-1 rounded-full font-semibold">Stranger</p>
+                  </div>
+              </div>
+              {lobby ? (
+                  <div className="lobby-message text-center bg-opacity-80 bg-black p-6 rounded-xl">
+                      <p className="text-white text-xl mb-4">Waiting to connect you to someone...</p>
+                      <div className="spinner w-16 h-16 border-6 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+              ) : (
+                  <button onClick={nextUser} className="next-button bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+                      Next
+                  </button>
+              )}
+              {!lobby && (
+                  <div className="gemini-chat mt-8 w-full max-w-2xl">
+                      <form onSubmit={handleGeminiSubmit} className="mb-4 flex">
+                          <input
+                              type="text"
+                              value={geminiQuestion}
+                              onChange={(e) => setGeminiQuestion(e.target.value)}
+                              placeholder="Ask Gemini a question..."
+                              className="p-3 rounded-l-lg flex-grow bg-white bg-opacity-20 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold p-3 rounded-r-lg transition duration-300 ease-in-out">Ask</button>
+                      </form>
+                      <div className="responses bg-white bg-opacity-10 p-6 rounded-xl max-h-80 overflow-y-auto shadow-inner">
+                          {geminiResponses && geminiResponses.length > 0 && geminiResponses.map((response, index) => (
+                              <div key={index} className="mb-4 last:mb-0 bg-opacity-30 bg-gray-700 p-4 rounded-lg">
+                                  <p className="text-blue-300 mb-2"><strong>Q:</strong> {response.question}</p>
+                                  <p className="text-white"><strong>A:</strong> {parse(response.answer)}</p>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              )}
+          </div>
+      );};
