@@ -17,7 +17,6 @@ export class RoomManager {
     createRoom(user1: User, user2: User) {
         const roomId = this.generate().toString();
         this.rooms.set(roomId, { user1, user2 });
-
         user1.socket.emit("send-offer", { roomId });
         user2.socket.emit("send-offer", { roomId });
     }
@@ -52,37 +51,19 @@ export class RoomManager {
         return null;
     }
 
-    removeRoom(roomId: string, leavingUserId: string): string | null {
+    removeRoom(roomId: string): [string, string] {
         const room = this.rooms.get(roomId);
-        if (!room) return null;
+        if (!room) return ['', ''];
 
         this.rooms.delete(roomId);
 
-        const remainingUser = room.user1.socket.id === leavingUserId ? room.user2 : room.user1;
-        remainingUser.socket.emit("lobby");
+        room.user1.socket.emit("lobby");
+        room.user2.socket.emit("lobby");
 
-        return remainingUser.socket.id;
+        return [room.user1.socket.id, room.user2.socket.id];
     }
 
     generate() {
         return GLOBAL_ROOM_ID++;
-    }
-
-    switchUsers(roomId: string, leavingUserId: string) {
-        const room = this.rooms.get(roomId);
-        if (!room) return;
-
-        const otherUserId = room.user1.socket.id === leavingUserId ? room.user2.socket.id : room.user1.socket.id;
-
-        // Remove the room and re-queue the users
-        this.rooms.delete(roomId);
-
-        // Emit "switch-user" event to the other user
-        const otherUser = room.user1.socket.id === leavingUserId ? room.user2 : room.user1;
-        otherUser.socket.emit("switch-user");
-
-        // Re-queue both users
-        this.removeRoom(roomId, leavingUserId);
-        this.removeRoom(roomId, otherUserId);
     }
 }

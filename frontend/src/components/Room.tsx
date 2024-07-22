@@ -105,11 +105,11 @@ export const Room = ({
                     setRemoteVideoTrack(track2)
                 }
                 //@ts-ignore
-                remoteVideoRef.current.srcObject.addTrack(track1)
+                remoteVideoRef.current!.srcObject!.addTrack(track1)
                 //@ts-ignore
-                remoteVideoRef.current.srcObject.addTrack(track2)
+                remoteVideoRef.current!.srcObject!.addTrack(track2)
                 //@ts-ignore
-                remoteVideoRef.current.play();
+                remoteVideoRef.current!.play();
                 // if (type == 'audio') {
                 //     // setRemoteAudioTrack(track);
                 //     // @ts-ignore
@@ -135,29 +135,7 @@ export const Room = ({
         socket.on("lobby", () => {
             setLobby(true);
         });
-        socket.on("next", () => {
-            setLobby(true);
-            // Reset streams and connections (same as in nextUser function)
-            if (remoteMediaStream) {
-                remoteMediaStream.getTracks().forEach(track => track.stop());
-            }
-            setRemoteMediaStream(null);
-            setRemoteVideoTrack(null);
-            setRemoteAudioTrack(null);
-            
-            if (remoteVideoRef.current) {
-                remoteVideoRef.current.srcObject = null;
-            }
-            
-            if (sendingPc) {
-                sendingPc.close();
-                setSendingPc(null);
-            }
-            if (receivingPc) {
-                receivingPc.close();
-                setReceivingPc(null);
-            }
-        });
+        
 
         socket.on("add-ice-candidate", ({ candidate, type }) => {
             if (type === "sender") {
@@ -212,12 +190,30 @@ export const Room = ({
     };
 
     return (
-        <div>
-            Hi {name}
-            <video autoPlay width={400} height={400} ref={localVideoRef} />
-            {lobby ? "Waiting to connect you to someone" : null}
-            <video autoPlay width={400} height={400} ref={remoteVideoRef} />
-            <button onClick={nextUser}>Next</button>
+        <div className="room-container min-h-screen bg-gradient-to-r from-slate-800 via-gray-500 to-zinc-950 flex flex-col justify-center items-center p-4">
+            <div className="user-info mb-4">
+                <h2 className="text-2xl font-bold text-white">Welcome, {name}!</h2>
+            </div>
+            <div className="video-container flex flex-col md:flex-row gap-4 mb-6">
+                <div className="video-wrapper relative">
+                    <video autoPlay muted playsInline width={400} height={400} ref={localVideoRef} className="video-feed rounded-lg shadow-lg" />
+                    <p className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded">You</p>
+                </div>
+                <div className="video-wrapper relative">
+                    <video autoPlay playsInline width={400} height={400} ref={remoteVideoRef} className="video-feed rounded-lg shadow-lg" />
+                    <p className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded">Stranger</p>
+                </div>
+            </div>
+            {lobby ? (
+                <div className="lobby-message text-center">
+                    <p className="text-white text-lg mb-2">Waiting to connect you to someone...</p>
+                    <div className="spinner w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            ) : (
+                <button onClick={nextUser} className="next-button bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">
+                    Next
+                </button>
+            )}
         </div>
     );
 };
