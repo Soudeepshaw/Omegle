@@ -109,6 +109,22 @@ export class RoomManager {
         
         receiver.socket.emit("new-message", message);
     }
+    screenShareStarted(roomId: string, socketId: string) {
+        const room = this.rooms.get(roomId);
+        if (room) {
+            const otherUser = room.user1.socket.id === socketId ? room.user2 : room.user1;
+            otherUser.socket.emit("remote-screen-share-started");
+        }
+    }
+    
+    screenShareStopped(roomId: string, socketId: string) {
+        const room = this.rooms.get(roomId);
+        if (room) {
+            const otherUser = room.user1.socket.id === socketId ? room.user2 : room.user1;
+            otherUser.socket.emit("remote-screen-share-stopped");
+        }
+    }
+    
     generate() {
         return GLOBAL_ROOM_ID++;
     }

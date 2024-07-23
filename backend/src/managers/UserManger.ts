@@ -84,6 +84,14 @@ export class UserManager {
         socket.on("send-message", ({ roomId, content }: { roomId: string, content: string }) => {
             this.roomManager.sendMessage(roomId, socket.id, content);
         });
+        socket.on("screen-share-started", ({ roomId }) => {
+            this.roomManager.screenShareStarted(roomId, socket.id);
+        });
+        
+        socket.on("screen-share-stopped", ({ roomId }) => {
+            this.roomManager.screenShareStopped(roomId, socket.id);
+        });
+        
         socket.on("gemini-request", ({ question, roomId }: { question: string, roomId: string }) => {
             console.log(`Received Gemini request from socket ${socket.id} in room ${roomId}`);
             console.log(`Question: "${question}"`);

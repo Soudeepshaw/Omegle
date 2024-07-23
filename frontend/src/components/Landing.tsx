@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { Link } from "react-router-dom";
+
 import { Room } from "./Room";
 
 export const Landing = () => {
@@ -9,6 +9,9 @@ export const Landing = () => {
     const videoRef = useRef<HTMLVideoElement>(null);
 
     const [joined, setJoined] = useState(false);
+    const [isMuted, setIsMuted] = useState(false);
+    const [isCameraOff, setIsCameraOff] = useState(false);
+
 
     const getCam = async () => {
         const stream = await window.navigator.mediaDevices.getUserMedia({
@@ -33,6 +36,19 @@ export const Landing = () => {
             getCam()
         }
     }, [videoRef]);
+    const toggleMute = () => {
+        setIsMuted(!isMuted);
+        if (localAudioTrack) {
+            localAudioTrack.enabled = isMuted;
+        }
+    };
+
+    const toggleCamera = () => {
+        setIsCameraOff(!isCameraOff);
+        if (localVideoTrack) {
+            localVideoTrack.enabled = isCameraOff;
+        }
+    };
 
     if (!joined) {
             
@@ -53,6 +69,20 @@ export const Landing = () => {
                 }}
                 className="mb-2 px-4 py-2 border rounded-lg"
             />
+            <div className="flex space-x-2 mb-4">
+                        <button
+                            onClick={toggleMute}
+                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                        >
+                            {isMuted ? 'Unmute' : 'Mute'}
+                        </button>
+                        <button
+                            onClick={toggleCamera}
+                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                        >
+                            {isCameraOff ? 'Turn Camera On' : 'Turn Camera Off'}
+                        </button>
+                    </div>
             <button
                 className="bg-gradient-to-r from-green-400 to-blue-500 hover:from-pink-500 hover:to-yellow-500 px-4 py-2 rounded-lg text-white font-bold"
                 onClick={() => {
@@ -65,6 +95,10 @@ export const Landing = () => {
     </div>    }
 
     return (
-    <Room name={name} localAudioTrack={localAudioTrack} localVideoTrack={localVideoTrack} />
+    <Room name={name} localAudioTrack={localAudioTrack} localVideoTrack={localVideoTrack} 
+    isMuted={isMuted}
+    isCameraOff={isCameraOff}
+    toggleMute={toggleMute}
+    toggleCamera={toggleCamera}/>
     )
 }
