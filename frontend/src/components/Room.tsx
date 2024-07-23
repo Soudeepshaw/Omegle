@@ -23,14 +23,14 @@ export const Room = ({
     toggleMute: () => void,
     toggleCamera: () => void,
 }) => {
-    const [searchParams, setSearchParams] = useSearchParams();
+    //const [searchParams, setSearchParams] = useSearchParams();
     const [chatMessages, setChatMessages] = useState<Array<{ sender: string; content: string }>>([]);
     const [lobby, setLobby] = useState(true);
     const [socket, setSocket] = useState<null | Socket>(null);
     const [sendingPc, setSendingPc] = useState<null | RTCPeerConnection>(null);
     const [receivingPc, setReceivingPc] = useState<null | RTCPeerConnection>(null);
-    const [remoteVideoTrack, setRemoteVideoTrack] = useState<MediaStreamTrack | null>(null);
-    const [remoteAudioTrack, setRemoteAudioTrack] = useState<MediaStreamTrack | null>(null);
+    const [_remoteVideoTrack, setRemoteVideoTrack] = useState<MediaStreamTrack | null>(null);
+    const [_remoteAudioTrack, setRemoteAudioTrack] = useState<MediaStreamTrack | null>(null);
     const [remoteMediaStream, setRemoteMediaStream] = useState<MediaStream | null>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
     const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -81,7 +81,7 @@ export const Room = ({
             };
         });
 
-        socket.on("offer", async ({ roomId, sdp: remoteSdp }) => {
+        socket.on("offer", async ({sdp: remoteSdp }) => {
             setLobby(false);
             const pc = new RTCPeerConnection();
             pc.setRemoteDescription(remoteSdp);
