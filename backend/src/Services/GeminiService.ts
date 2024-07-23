@@ -1,12 +1,17 @@
 import { GoogleGenerativeAI ,ChatSession} from '@google/generative-ai';
-
+import dotenv from 'dotenv';
+dotenv.config();
 export class GeminiService {
     private genAI: GoogleGenerativeAI;
     private chatSessions: Map<string, ChatSession>;
 
     constructor() {
         console.log('Initializing GeminiService');
-        this.genAI = new GoogleGenerativeAI("AIzaSyCEItIAVCnm56UPvk4Vm9cvqg3RAa4GfSg");
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            throw new Error('GEMINI_API_KEY is not set in the environment');
+        }
+        this.genAI = new GoogleGenerativeAI(apiKey);
         this.chatSessions = new Map();
     }
 
