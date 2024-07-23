@@ -426,7 +426,7 @@ export const Room = ({
     
         return (
             <div className="chat-container w-full max-w-2xl bg-white bg-opacity-10 rounded-xl shadow-lg overflow-hidden">
-                <div ref={chatContainerRef} className="chat-messages p-4 h-96 overflow-y-auto">
+                <div ref={chatContainerRef} className="chat-messages p-4 overflow-y-auto h-96 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
                     {chatMessages.map((msg, index) => (
                         <div key={index} className={`mb-4 ${msg.sender === socket?.id ? 'text-left' : 'text-right'}`}>
                             <span className={`inline-block px-4 py-2 rounded-lg ${msg.sender === socket?.id ? 'bg-blue-500 text-white' : 'bg-gray-300 text-black'}`}>
