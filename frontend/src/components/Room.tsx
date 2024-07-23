@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+//import { useSearchParams } from "react-router-dom";
 import { Socket, io } from "socket.io-client";
 import parse from 'html-react-parser';
 
@@ -81,7 +81,7 @@ export const Room = ({
             };
         });
 
-        socket.on("offer", async ({sdp: remoteSdp }) => {
+        socket.on("offer", async ({ roomId, sdp: remoteSdp }) => {
             setLobby(false);
             const pc = new RTCPeerConnection();
             pc.setRemoteDescription(remoteSdp);
@@ -146,7 +146,7 @@ export const Room = ({
         });
         
 
-        socket.on("answer", ({ roomId, sdp: remoteSdp }) => {
+        socket.on("answer", ({sdp: remoteSdp }) => {
             setLobby(false);
             setSendingPc(pc => {
                 pc?.setRemoteDescription(remoteSdp);
