@@ -3,7 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { Socket, io } from "socket.io-client";
 import parse from 'html-react-parser';
 
-const URL = "http://localhost:3000";
+const URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 
 export const Room = ({
     name,
